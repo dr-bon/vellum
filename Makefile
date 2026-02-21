@@ -1,6 +1,6 @@
 TARGET := vellum
 
-.PHONY: all clean tui gui test fmt clippy
+.PHONY: all clean tui gui test fmt lint
 
 all:
 	cargo build --release
@@ -20,5 +20,5 @@ test:
 fmt:
 	cargo fmt
 
-clippy:
+lint:
 	cargo clippy --release -- -D warnings
