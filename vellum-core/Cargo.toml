@@ -9,5 +9,6 @@ authors.workspace = true
 path = "src/lib.rs"
 
 [dependencies]
+ropey.workspace = true
 
 [dev-dependencies]
