@@ -41,6 +41,20 @@ jobs:
       - name: cargo clippy --release -- -D warnings
         run: cargo clippy --workspace --all-targets --release -- -D warnings
 
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: cargo build
+        run: cargo build --workspace --release
+
   test:
     name: tests
     runs-on: ubuntu-latest
