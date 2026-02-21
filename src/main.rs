@@ -6,6 +6,7 @@ use std::io::stdout;
 use std::io::Write;
 use std::{cmp, env, fs, io};
 use std::path::Path;
+use std::cmp::Ordering;
 
 struct CleanUp;
 
@@ -35,7 +36,7 @@ impl Output {
     }
 
     fn move_cursor(&mut self, direction: KeyCode) {
-        self.cursor_controller.move_cursor(direction, self.editor_rows.num_rows());
+        self.cursor_controller.move_cursor(direction, &self.editor_rows);
     }
     
     fn draw_rows(&mut self) {
@@ -60,8 +61,11 @@ impl Output {
                     self.editor_contents.push('~');
                 }
             } else {
-                let len = cmp::min(self.editor_rows.get_row(file_row).len(), screen_cols);
-                self.editor_contents.push_str(&self.editor_rows.get_row(file_row)[..len]);
+                let row = self.editor_rows.get_row(file_row);
+                let col_offset = self.cursor_controller.col_offset;
+                let len = cmp::min(row.len().saturating_sub(col_offset), screen_cols);
+                let start = if len == 0 { 0 } else { col_offset };
+                self.editor_contents.push_str(&row[start..start + len]);
             }
             queue!(self.editor_contents, terminal::Clear(ClearType::UntilNewLine)).unwrap();
             if i < screen_rows - 1 {
@@ -70,11 +74,12 @@ impl Output {
             stdout().flush();
         }
     }
+
     fn refresh_screen(&mut self) -> crossterm::Result<()> {
         self.cursor_controller.scroll();
         queue!(self.editor_contents, cursor::Hide, cursor::MoveTo(0, 0))?;
         self.draw_rows();
-        let cursor_x = self.cursor_controller.x;
+        let cursor_x = self.cursor_controller.x - self.cursor_controller.col_offset;
         let cursor_y = self.cursor_controller.y - self.cursor_controller.row_offset;
         queue!(self.editor_contents, cursor::MoveTo(cursor_x as u16, cursor_y as u16), cursor::Show)?;
         self.editor_contents.flush()
@@ -181,11 +186,12 @@ struct CursorController {
     screen_rows: usize,
     screen_cols: usize,
     row_offset: usize,
+    col_offset: usize,
 }
 
 impl CursorController {
     fn new(win_size: (usize, usize)) -> Self {
-        Self { x: 0, y: 0, screen_rows: win_size.1, screen_cols: win_size.0, row_offset: 0 }
+        Self { x: 0, y: 0, screen_rows: win_size.1, screen_cols: win_size.0, row_offset: 0, col_offset: 0 }
     }
 
     fn scroll(&mut self) {
@@ -193,9 +199,14 @@ impl CursorController {
         if self.y >= self.row_offset + self.screen_rows {
             self.row_offset = self.y - self.screen_rows + 1;
         }
+        self.col_offset = cmp::min(self.col_offset, self.x);
+        if self.x >= self.col_offset + self.screen_cols {
+            self.col_offset = self.x - self.screen_cols + 1;
+        }
     }
 
-    fn move_cursor(&mut self, direction: KeyCode, num_rows: usize) {
+    fn move_cursor(&mut self, direction: KeyCode, editor_rows: &EditorRows) {
+        let num_rows = editor_rows.num_rows();
         match direction {
             KeyCode::Up => {
                 self.y = self.y.saturating_sub(1);
@@ -203,6 +214,9 @@ impl CursorController {
             KeyCode::Left => {
                 if self.x != 0 {
                     self.x -= 1;
+                } else if self.y > 0 {
+                    self.y -= 1;
+                    self.x = editor_rows.get_row(self.y).len();
                 }
             }
             KeyCode::Down => {
@@ -211,8 +225,15 @@ impl CursorController {
                 }
             }
             KeyCode::Right => {
-                if self.x != self.screen_cols - 1 {
-                    self.x += 1;
+                if self.y < num_rows {
+                    match self.x.cmp(&editor_rows.get_row(self.y).len()) {
+                        Ordering::Less => self.x += 1,
+                        Ordering::Equal => {
+                            self.y += 1;
+                            self.x = 0;
+                        }
+                        _ => {}
+                    }
                 }
             }
             KeyCode::Home => {
@@ -223,6 +244,12 @@ impl CursorController {
             }
             _ => unimplemented!(),
         }
+        let row_len = if self.y < num_rows {
+            editor_rows.get_row(self.y).len()
+        } else {
+            0
+        };
+        self.x = cmp::min(self.x, row_len);
     }
 }
 
