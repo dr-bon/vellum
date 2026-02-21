@@ -16,7 +16,7 @@ authors = ["Jonathan Bailey <jonathan.bailey@comcast.net>"]
 
 [workspace.dependencies]
 # Core dependencies
-# TODO: TBD
+ropey = "1.6.1"
 
 # App dependencies
 crossterm = "0.29.0"
