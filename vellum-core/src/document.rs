@@ -39,7 +39,7 @@ impl DocumentBuffer {
         DocumentBuffer { contents: rope }
     }
 
-    pub fn to_string(&self) -> String {
+    pub fn get_contents(&self) -> String {
         self.contents.to_string()
     }
 

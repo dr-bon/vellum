@@ -233,12 +233,32 @@ impl Cursor {
             Direction::LineStart => {
                 match doc_pos {
                     // if line start, do nothing
-                    DocumentPosition::LineStart { line, col, idx } => {}
+                    DocumentPosition::LineStart {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    } => {}
                     // go to current line start, preferred col = 0
-                    DocumentPosition::DocStart { line, col, idx }
-                    | DocumentPosition::DocEnd { line, col, idx }
-                    | DocumentPosition::LineEnd { line, col, idx }
-                    | DocumentPosition::LineCol { line, col, idx } => {
+                    DocumentPosition::DocStart {
+                        line,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::DocEnd {
+                        line,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::LineEnd {
+                        line,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::LineCol {
+                        line,
+                        col: _,
+                        idx: _,
+                    } => {
                         self.pos = doc.line(line).start_idx;
                         self.preferred_col = Some(0);
                     }
@@ -247,12 +267,32 @@ impl Cursor {
             Direction::LineEnd => {
                 match doc_pos {
                     // if line end, do nothing
-                    DocumentPosition::LineEnd { line, col, idx } => {}
+                    DocumentPosition::LineEnd {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    } => {}
                     // go to current line end, set preferred col
-                    DocumentPosition::DocStart { line, col, idx }
-                    | DocumentPosition::DocEnd { line, col, idx }
-                    | DocumentPosition::LineStart { line, col, idx }
-                    | DocumentPosition::LineCol { line, col, idx } => {
+                    DocumentPosition::DocStart {
+                        line,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::DocEnd {
+                        line,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::LineStart {
+                        line,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::LineCol {
+                        line,
+                        col: _,
+                        idx: _,
+                    } => {
                         let doc_line = doc.line(line);
                         self.pos = doc_line.start_idx + doc_line.len_chars;
                         self.preferred_col = Some(doc_line.len_chars);
@@ -262,12 +302,32 @@ impl Cursor {
             Direction::DocStart => {
                 match doc_pos {
                     // if doc start, do nothing
-                    DocumentPosition::DocStart { line, col, idx } => {}
+                    DocumentPosition::DocStart {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    } => {}
                     // go to doc start, preferred col = 0
-                    DocumentPosition::DocEnd { line, col, idx }
-                    | DocumentPosition::LineStart { line, col, idx }
-                    | DocumentPosition::LineEnd { line, col, idx }
-                    | DocumentPosition::LineCol { line, col, idx } => {
+                    DocumentPosition::DocEnd {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::LineStart {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::LineEnd {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::LineCol {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    } => {
                         self.pos = 0;
                         self.preferred_col = Some(0);
                     }
@@ -276,12 +336,32 @@ impl Cursor {
             Direction::DocEnd => {
                 match doc_pos {
                     // if doc end, do nothing
-                    DocumentPosition::DocEnd { line, col, idx } => {}
+                    DocumentPosition::DocEnd {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    } => {}
                     // go to doc end, set preferred col
-                    DocumentPosition::DocStart { line, col, idx }
-                    | DocumentPosition::LineStart { line, col, idx }
-                    | DocumentPosition::LineEnd { line, col, idx }
-                    | DocumentPosition::LineCol { line, col, idx } => {
+                    DocumentPosition::DocStart {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::LineStart {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::LineEnd {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    }
+                    | DocumentPosition::LineCol {
+                        line: _,
+                        col: _,
+                        idx: _,
+                    } => {
                         let doc_line = doc.line(doc.line_count() - 1);
                         self.pos = doc_line.start_idx + doc_line.len_chars;
                         self.preferred_col = Some(doc_line.len_chars);
