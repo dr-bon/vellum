@@ -17,6 +17,7 @@ authors = ["Jonathan Bailey <jonathan.bailey@comcast.net>"]
 [workspace.dependencies]
 # Core dependencies
 ropey = "1.6.1"
+unicode_segmentation = "1.12.0"
 
 # App dependencies
 crossterm = "0.29.0"

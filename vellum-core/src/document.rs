@@ -2,6 +2,7 @@ use ropey::Rope;
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::path::Path;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub enum DocumentPosition {
     DocStart { line: usize, col: usize, idx: usize },
@@ -123,6 +124,33 @@ impl DocumentBuffer {
             start_idx: self.contents.line_to_char(line),
             len_chars: self.contents.line(line).len_chars(),
         }
+    }
+
+    pub fn prev_token_start(&self, char_idx: usize) -> usize {
+        if char_idx == 0 {
+            return 0;
+        }
+        let text = self.contents.slice(..char_idx).to_string();
+        for (i, _) in text.unicode_word_indices().rev() {
+            if i < char_idx {
+                return i;
+            }
+        }
+        0
+    }
+
+    pub fn next_token_start(&self, char_idx: usize) -> usize {
+        if char_idx >= self.char_count() {
+            return self.char_count();
+        }
+        let text = self.contents.slice(char_idx..).to_string();
+        for (i, _) in text.unicode_word_indices() {
+            if i > 0 {
+                // Return the index relative to the original document
+                return char_idx + i;
+            }
+        }
+        self.char_count()
     }
 }
 
