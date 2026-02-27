@@ -1,14 +1,19 @@
 TARGET := vellum
 
-.PHONY: all build clean tui gui test fmt fmtc lint
+.PHONY: all build clean debug tui gui test fmt fmtc lint
 
 all: clean fmt lint build
+
+
 
 build:
 	cargo build --release
 
 clean:
 	cargo clean
+
+debug:
+	cargo build
 
 tui:
 	cargo run --release -p vellum-tui

@@ -2,10 +2,10 @@ use crossterm::event::{Event, KeyCode, KeyEvent};
 use crossterm::terminal::ClearType;
 use crossterm::{cursor, event, execute, terminal};
 use std::io::{stdout, Result};
+// use std::path::Path;
 use std::time::Duration;
 use vellum_app::actions::{Action, ActionResult};
 use vellum_app::application::Application;
-
 struct CleanUp;
 
 impl Drop for CleanUp {
@@ -17,12 +17,14 @@ impl Drop for CleanUp {
 }
 
 fn main() -> Result<()> {
+    // let fp = Path::new("hello_world.txt");
     let _clean_up = CleanUp;
     let win_size = terminal::size()
         .map(|(x, y)| (x as usize, y as usize))
         .unwrap();
     println!("TERMINAL SIZE = ({:?}, {:?})", win_size.0, win_size.1);
     let mut app = Application::new(win_size);
+    // app.editor.load_document_from_file(fp);
     terminal::enable_raw_mode()?;
     loop {
         if event::poll(Duration::from_millis(500))? {

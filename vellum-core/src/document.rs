@@ -4,28 +4,24 @@ use std::io::{BufReader, BufWriter};
 use std::path::Path;
 use unicode_segmentation::UnicodeSegmentation;
 
-pub enum DocumentPosition {
-    DocStart { line: usize, col: usize, idx: usize },
-    DocEnd { line: usize, col: usize, idx: usize },
-    LineStart { line: usize, col: usize, idx: usize },
-    LineEnd { line: usize, col: usize, idx: usize },
-    LineCol { line: usize, col: usize, idx: usize },
+pub enum PositionKind {
+    DocStart,
+    DocEnd,
+    LineStart,
+    LineEnd,
+    LineCol,
 }
 
-impl DocumentPosition {
-    pub fn as_tuple(&self) -> (usize, usize, usize) {
-        match self {
-            DocumentPosition::DocStart { line, col, idx }
-            | DocumentPosition::DocEnd { line, col, idx }
-            | DocumentPosition::LineStart { line, col, idx }
-            | DocumentPosition::LineEnd { line, col, idx }
-            | DocumentPosition::LineCol { line, col, idx } => (*line, *col, *idx),
-        }
-    }
+pub struct DocumentPosition {
+    pub kind: PositionKind,
+    pub line: usize,
+    pub col: usize,
+    pub idx: usize,
 }
 
 pub struct Line {
     pub start_idx: usize,
+    pub line_no: usize,
     pub len_chars: usize,
 }
 
@@ -51,15 +47,17 @@ impl DocumentBuffer {
         DocumentBuffer { contents: rope }
     }
 
-    pub fn get_contents(&self) -> String {
-        self.contents.to_string()
-    }
-
     pub fn from_file(path: &Path) -> std::io::Result<Self> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         let rope = Rope::from_reader(reader).map_err(std::io::Error::other)?;
         Ok(DocumentBuffer { contents: rope })
+    }
+
+    pub fn load_file(&mut self, path: &Path) {
+        let file = File::open(path).expect("TODO: Fix this later");
+        let reader = BufReader::new(file);
+        self.contents = Rope::from_reader(reader).expect("TODO: Fix this later");
     }
 
     pub fn to_file(&self, path: &Path) -> std::io::Result<()> {
@@ -69,6 +67,10 @@ impl DocumentBuffer {
             .write_to(&mut writer)
             .map_err(std::io::Error::other)?;
         Ok(())
+    }
+
+    pub fn line_len(&self, line_idx: usize) -> usize {
+        self.contents.line(line_idx).len_chars()
     }
 
     pub fn last_line_idx(&self) -> usize {
@@ -89,35 +91,41 @@ impl DocumentBuffer {
 
     pub fn get_position(&self, char_idx: usize) -> DocumentPosition {
         if char_idx == 0 {
-            DocumentPosition::DocStart {
+            DocumentPosition {
+                kind: PositionKind::DocStart,
                 line: 0,
                 col: 0,
                 idx: 0,
             }
         } else if char_idx >= self.char_count() {
-            DocumentPosition::DocEnd {
-                line: self.line_count() - 1,
-                col: self.contents.line(self.line_count() - 1).len_chars(),
-                idx: self.char_count() - 1,
+            let last_line_idx = self.last_line_idx();
+            DocumentPosition {
+                kind: PositionKind::DocEnd,
+                line: last_line_idx,
+                col: self.line_len(last_line_idx),
+                idx: self.last_char_idx(),
             }
         } else {
             let line_idx = self.contents.char_to_line(char_idx);
-            let line_char_idx = self.contents.line_to_char(line_idx);
-            let col = char_idx - line_char_idx;
+            let line_start_idx = self.contents.line_to_char(line_idx);
+            let col = char_idx - line_start_idx;
             if col == 0 {
-                DocumentPosition::LineStart {
+                DocumentPosition {
+                    kind: PositionKind::LineStart,
                     line: line_idx,
                     col,
-                    idx: line_char_idx,
+                    idx: line_start_idx,
                 }
-            } else if col >= self.contents.line(line_idx).len_chars() {
-                DocumentPosition::LineEnd {
+            } else if col >= self.line_len(line_idx) {
+                DocumentPosition {
+                    kind: PositionKind::LineEnd,
                     line: line_idx,
                     col,
                     idx: char_idx,
                 }
             } else {
-                DocumentPosition::LineCol {
+                DocumentPosition {
+                    kind: PositionKind::LineCol,
                     line: line_idx,
                     col,
                     idx: char_idx,
@@ -126,14 +134,11 @@ impl DocumentBuffer {
         }
     }
 
-    pub fn get_start(&self) -> (usize, usize, usize) {
-        (0, 0, 0)
-    }
-
     pub fn line(&self, char_idx: usize) -> Line {
         let line = self.contents.char_to_line(char_idx);
         Line {
             start_idx: self.contents.line_to_char(line),
+            line_no: self.contents.char_to_line(char_idx),
             len_chars: self.contents.line(line).len_chars(),
         }
     }
@@ -173,5 +178,3 @@ impl DocumentBuffer {
         self.contents.remove(start..end);
     }
 }
-
-// TODO: Multi-buffer (for multiple editors)

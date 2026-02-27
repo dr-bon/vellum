@@ -71,9 +71,9 @@ use vellum_core::editor::Editor;
 // }
 
 pub struct Application {
-    editor: Editor, // TODO: Multiple editors
-                    // config: ApplicationConfig,
-                    // settings: ApplicationSettings,
+    pub editor: Editor, // TODO: Multiple editors
+                        // config: ApplicationConfig,
+                        // settings: ApplicationSettings,
 }
 
 impl Application {
@@ -89,48 +89,51 @@ impl Application {
         match a {
             Action::Exit => ActionResult::Exited,
             Action::ShiftCursorUp => {
-                let new_cursor_pos = self
-                    .editor
-                    .shift_cursor(Direction::Up, 1, WrapMode::None)
-                    .as_tuple();
-                ActionResult::CursorShifted {
-                    line: new_cursor_pos.0,
-                    col: new_cursor_pos.1,
-                    idx: new_cursor_pos.2,
+                if self.editor.shift_cursor(Direction::Up, 1, WrapMode::None) {
+                    let new_pos = self.editor.get_cursor_pos();
+                    return ActionResult::CursorShifted {
+                        line: new_pos.line,
+                        col: new_pos.col,
+                        idx: new_pos.idx,
+                    };
                 }
+                ActionResult::Null
             }
             Action::ShiftCursorDown => {
-                let new_cursor_pos = self
-                    .editor
-                    .shift_cursor(Direction::Down, 1, WrapMode::None)
-                    .as_tuple();
-                ActionResult::CursorShifted {
-                    line: new_cursor_pos.0,
-                    col: new_cursor_pos.1,
-                    idx: new_cursor_pos.2,
+                if self.editor.shift_cursor(Direction::Down, 1, WrapMode::None) {
+                    let new_pos = self.editor.get_cursor_pos();
+                    return ActionResult::CursorShifted {
+                        line: new_pos.line,
+                        col: new_pos.col,
+                        idx: new_pos.idx,
+                    };
                 }
+                ActionResult::Null
             }
             Action::ShiftCursorRight => {
-                let new_cursor_pos = self
+                if self
                     .editor
                     .shift_cursor(Direction::Right, 1, WrapMode::None)
-                    .as_tuple();
-                ActionResult::CursorShifted {
-                    line: new_cursor_pos.0,
-                    col: new_cursor_pos.1,
-                    idx: new_cursor_pos.2,
+                {
+                    let new_pos = self.editor.get_cursor_pos();
+                    return ActionResult::CursorShifted {
+                        line: new_pos.line,
+                        col: new_pos.col,
+                        idx: new_pos.idx,
+                    };
                 }
+                ActionResult::Null
             }
             Action::ShiftCursorLeft => {
-                let new_cursor_pos = self
-                    .editor
-                    .shift_cursor(Direction::Left, 1, WrapMode::None)
-                    .as_tuple();
-                ActionResult::CursorShifted {
-                    line: new_cursor_pos.0,
-                    col: new_cursor_pos.1,
-                    idx: new_cursor_pos.2,
+                if self.editor.shift_cursor(Direction::Left, 1, WrapMode::None) {
+                    let new_pos = self.editor.get_cursor_pos();
+                    return ActionResult::CursorShifted {
+                        line: new_pos.line,
+                        col: new_pos.col,
+                        idx: new_pos.idx,
+                    };
                 }
+                ActionResult::Null
             }
             _ => ActionResult::Unhandled,
         }

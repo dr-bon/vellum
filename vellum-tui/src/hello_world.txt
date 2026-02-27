@@ -1,1 +1,7 @@
 The quick brown fox jumps over the lazy dog.
+
+This is an example file...
+
+I'm trying to make it somewhat long...
+
+Hopefully it helps with debugging!

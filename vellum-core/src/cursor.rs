@@ -44,14 +44,36 @@ impl Cursor {
         }
     }
 
-    pub fn shift(&mut self, doc: &DocumentBuffer, dir: Direction, mag: usize, wrap_mode: WrapMode) {
-        // Valid cursor positions are 0..doc.len_chars()
-        // +1 because the cursor position is a gap between characters
+    pub fn reset(&mut self) {
+        *self = Self::default()
+    }
+
+    pub fn set_pos(&mut self, doc: &DocumentBuffer, new_pos: usize) {
+        if new_pos != self.pos {
+            self.pos = new_pos.clamp(0, doc.char_count());
+            let new_line = doc.line(self.pos);
+            let new_line_len = doc.line_len(new_line.line_no);
+            let new_col = new_line_len.min(self.preferred_col.unwrap_or(0));
+            self.preferred_col = Some(new_col)
+        }
+    }
+
+    pub fn shift(
+        &mut self,
+        doc: &DocumentBuffer,
+        dir: Direction,
+        mag: usize,
+        wrap_mode: WrapMode,
+    ) -> bool {
+        // NOTE: There are 0..doc.len_chars()+1 valid cursor positions
+        let original_pos = self.pos;
         let doc_len = isize::try_from(doc.contents.len_chars())
             .expect("DocumentBuffer length too large for isize");
-        println!("DOC_LEN = {}", doc_len);
+        if doc_len == 0 {
+            self.reset();
+            return self.pos != original_pos;
+        }
         let cur_pos = isize::try_from(self.pos).expect("Cursor position too large for isize");
-        println!("POS = {}", cur_pos);
         match dir {
             Direction::Left => {
                 let char_delta = -isize::try_from(mag).expect("Magnitude too large for isize");
@@ -93,7 +115,7 @@ impl Cursor {
                 if total_lines == 0 {
                     self.pos = 0;
                     self.preferred_col = Some(0);
-                    return;
+                    return self.pos != original_pos;
                 }
                 for _ in 0..mag {
                     if line == 0 {
@@ -128,7 +150,7 @@ impl Cursor {
                 if total_lines == 0 {
                     self.pos = 0;
                     self.preferred_col = Some(0);
-                    return;
+                    return self.pos != original_pos;
                 }
 
                 for _ in 0..mag {
@@ -157,6 +179,6 @@ impl Cursor {
             }
             _ => {}
         }
-        println!("UPDATED_POS = {}", self.pos);
+        self.pos != original_pos
     }
 }

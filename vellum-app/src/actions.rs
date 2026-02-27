@@ -38,6 +38,7 @@ pub enum Action {
 #[derive(Deserialize)]
 pub enum ActionResult {
     Unhandled,
+    Null,
     CursorShifted { line: usize, col: usize, idx: usize },
     Saved,
     Opened,
