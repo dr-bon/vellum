@@ -1,29 +1,35 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use crossterm::terminal::ClearType;
-use crossterm::{cursor, event, execute, terminal};
+use crossterm::{cursor, event, execute, queue, terminal};
 use std::io;
 use std::io::{stdout, Write};
 use std::time::Duration;
 use vellum_app::actions::{Action, ActionResult};
 use vellum_app::application::Application;
 
-struct TerminalView {
+pub struct TUI {
     view_size: (usize, usize),
+    txt_buffer: String,
+    app: Application,
 }
 
-impl TerminalView {
-    fn new() -> Self {
-        let view_size = terminal::size()
-            .map(|(x, y)| (x as usize, y as usize))
-            .unwrap();
-        Self { view_size }
+impl TUI {
+    pub fn new() -> Self {
+        Self {
+            view_size: terminal::size()
+                .map(|(x, y)| (x as usize, y as usize))
+                .unwrap(),
+            txt_buffer: String::new(),
+            app: Application::new(),
+        }
     }
 
-    fn draw_rows(&self) {
+    fn draw_rows(&mut self) {
         for i in 0..self.view_size.1 {
-            print!("~");
+            self.txt_buffer.push('~');
+            queue!(self, terminal::Clear(ClearType::UntilNewLine)).unwrap();
             if i < self.view_size.1 - 1 {
-                println!("\r")
+                self.txt_buffer.push_str("\r\n");
             }
             stdout()
                 .flush()
@@ -36,44 +42,16 @@ impl TerminalView {
         execute!(stdout(), cursor::MoveTo(0, 0))
     }
 
-    fn refresh_screen(&self) -> io::Result<()> {
-        Self::clear_screen()?;
+    fn refresh_screen(&mut self) -> io::Result<()> {
+        queue!(self, cursor::Hide, cursor::MoveTo(0, 0))?;
         self.draw_rows();
-        execute!(stdout(), cursor::MoveTo(0, 0))
-    }
-}
-
-pub struct TUI {
-    view: TerminalView,
-    app: Application,
-}
-
-impl Default for TUI {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Drop for TUI {
-    fn drop(&mut self) {
-        terminal::disable_raw_mode().expect("Unable to disable terminal raw mode.");
-        TerminalView::clear_screen().expect("Unable to clear screen.");
-    }
-}
-
-impl TUI {
-    pub fn new() -> Self {
-        Self {
-            view: TerminalView::new(),
-            app: Application::new(),
-        }
+        queue!(self, cursor::MoveTo(0, 0), cursor::Show)?;
+        self.flush()
     }
 
-    fn read_key(&self, poll_duration_ms: u64) -> io::Result<KeyEvent> {
+    fn read_key(&mut self, poll_duration_ms: u64) -> io::Result<KeyEvent> {
         loop {
-            self.view
-                .refresh_screen()
-                .expect("Failed to refresh screen");
+            self.refresh_screen().expect("Failed to refresh screen");
             if event::poll(Duration::from_millis(poll_duration_ms))? {
                 if let Event::Key(event) = event::read()? {
                     return Ok(event);
@@ -82,8 +60,8 @@ impl TUI {
         }
     }
 
-    fn process_keypress(&mut self) -> io::Result<bool> {
-        match self.read_key(500)? {
+    fn process_keypress(&mut self, poll_duration_ms: u64) -> io::Result<bool> {
+        match self.read_key(poll_duration_ms)? {
             KeyEvent {
                 code: KeyCode::Char('q'),
                 modifiers: KeyModifiers::CONTROL,
@@ -138,8 +116,42 @@ impl TUI {
         Ok(true)
     }
 
-    pub fn run(&mut self) -> io::Result<bool> {
+    pub fn run(&mut self, poll_duration_ms: u64) -> io::Result<bool> {
         terminal::enable_raw_mode().expect("Failed to enable terminal raw mode."); // TODO: Is this ok to be here?
-        self.process_keypress()
+        self.process_keypress(poll_duration_ms)
+    }
+}
+
+impl Default for TUI {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Drop for TUI {
+    fn drop(&mut self) {
+        terminal::disable_raw_mode().expect("Unable to disable terminal raw mode.");
+        TUI::clear_screen().expect("Unable to clear screen.");
+    }
+}
+
+impl io::Write for TUI {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        match std::str::from_utf8(buf) {
+            Ok(s) => {
+                self.txt_buffer.push_str(s);
+                Ok(s.len())
+            }
+            Err(_) => Err(io::ErrorKind::WriteZero.into()),
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        let out = write!(stdout(), "{}", self.txt_buffer);
+        stdout()
+            .flush()
+            .expect("Unable to flush TUI text buffer to stdout.");
+        self.txt_buffer.clear();
+        out
     }
 }

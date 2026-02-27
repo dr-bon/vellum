@@ -69,6 +69,10 @@ impl DocumentBuffer {
         Ok(())
     }
 
+    pub fn clear(&mut self) {
+        self.contents.remove(0..self.contents.len_chars())
+    }
+
     pub fn line_len(&self, line_idx: usize) -> usize {
         self.contents.line(line_idx).len_chars()
     }
@@ -172,6 +176,10 @@ impl DocumentBuffer {
 
     pub fn write(&mut self, txt: &str, char_idx: usize) {
         self.contents.insert(char_idx, txt);
+    }
+
+    pub fn push(&mut self, txt: &str) {
+        self.contents.insert(self.contents.len_chars(), txt);
     }
 
     pub fn delete(&mut self, start: usize, end: usize) {

@@ -5,6 +5,6 @@ use crate::tui::TUI;
 
 fn main() -> io::Result<()> {
     let mut tui = TUI::new();
-    while tui.run()? {}
+    while tui.run(500)? {}
     Ok(())
 }
