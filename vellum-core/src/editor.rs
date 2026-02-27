@@ -2,17 +2,20 @@ use crate::cursor::{Cursor, Direction, WrapMode};
 use crate::document::{DocumentBuffer, DocumentPosition};
 use std::path::Path;
 
-#[allow(dead_code)]
 pub struct Editor {
-    view_size: (usize, usize),
     pub contents: DocumentBuffer,
     pub cursor: Cursor,
 }
 
+impl Default for Editor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Editor {
-    pub fn new(view_size: (usize, usize)) -> Self {
+    pub fn new() -> Self {
         Self {
-            view_size,
             contents: DocumentBuffer::new(),
             cursor: Cursor::new(),
         }

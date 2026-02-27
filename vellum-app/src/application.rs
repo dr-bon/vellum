@@ -76,10 +76,16 @@ pub struct Application {
                         // settings: ApplicationSettings,
 }
 
+impl Default for Application {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Application {
-    pub fn new(view_size: (usize, usize)) -> Self {
+    pub fn new() -> Self {
         Self {
-            editor: Editor::new(view_size),
+            editor: Editor::new(),
             // config: ApplicationConfig::new(),
             // settings: ApplicationSettings::default()
         }
